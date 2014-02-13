@@ -15,6 +15,4 @@ void page_sim_end();
 int page_sim_get(unsigned a, uint8_t *v);
 int page_sim_set(unsigned a, uint8_t v);
 
-void print_hello();
-
 #endif
