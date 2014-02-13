@@ -1,13 +1,17 @@
-# all: serwer
+all: simple_test
 
-# serwer: serwer.o err.o utilities.o
-	# cc -Wall -pthread -o serwer serwer.o err.o utilities.o
+simple_test: libpagesim.a simple_test.o
+	cc simple_test.cc libpagesim.a
 
-# serwer.o: serwer.c err.h utilities.h
-	# cc -Wall -c serwer.c
+libpagesim.a: pagesim.o
+	ar rcs libpagesim.a pagesim.o
+
+pagesim.o: pagesim.cc
+	cc -Wall -c pagesim.cc
 
 # err.o: err.c err.h
 	# cc -Wall -c err.c
 
+# TODO delete *.out
 clean:
-	rm -f *.o serwer klient
+	rm -f *.o *.a *.out simple_test
