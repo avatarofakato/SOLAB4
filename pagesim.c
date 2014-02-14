@@ -17,6 +17,7 @@ typedef enum {
 	ND
 } position;
 
+// TODO probably we'd have nastepna_wolna = -1 initialized
 typedef struct {
 	int bylo_odwolanie;
 	int czas_odwolania;
@@ -100,17 +101,21 @@ void WSClock(int *nrramki)
 	{
 		*znaleziono = 0;
 		ostatni = strzalka;
-		while(znaleziono || (strzalka == ostatni))
+		while(*znaleziono || (strzalka == ostatni))
 		{
 			strzalka = (strzalka + 1) % mem_size;
+			// trwa_transmisja == strona byla modyfikowana lub jest zapisywana na dysk
 			if(!PaO[strzalka].trwa_transmisja)
+			{
 				if(PaO[strzalka].bylo_odwolanie)
 				{
 					PaO[strzalka].bylo_odwolanie = 0;
 					PaO[strzalka].czas_odwolania = number_of_pagesim_call;
 				}
 				else
+				{
 					if(abs(number_of_pagesim_call - PaO[strzalka].czas_odwolania) > T)
+					{
 						if(PaO[strzalka].modyfikowana)
 						{
 							usuwane++;
@@ -123,14 +128,15 @@ void WSClock(int *nrramki)
 							PaO[strzalka].proces = biezacy_proces;
 							*nrramki = strzalka;
 						}
+					}
+				}
+			}
 		}
 
-		if(!znaleziono)
+		if(!(*znaleziono))
 		{
 			if(czekajacy >= usuwane)
-			{
 				nrproc = UsunProces();
-			}
 
 			size_t ostatni;
 			for(ostatni = 0; ostatni < mem_size; ostatni++)
@@ -207,8 +213,6 @@ int page_sim_init(unsigned _page_size, unsigned _mem_size,
 		return -1;
 	}
 
-	first_time_init = 0;
-
 	page_size = _page_size;
 	mem_size = _mem_size;
 	addr_space_size = _addr_space_size;
@@ -221,12 +225,16 @@ int page_sim_init(unsigned _page_size, unsigned _mem_size,
 	PaO = (frame*) malloc(mem_size);
 	virtual_memory = (int*) malloc(page_size * mem_size);
 	size_t i;
+	pthread_mutex_unlock(&mutex);
+
 	for(i = 0; i < mem_size; i++)
 	{
 		set_frame(i, ST, -1);
 		set_frame(i, ND, -1);
 	}
+
 	empty_frames = mem_size;
+	first_time_init = 0;
 	pthread_mutex_unlock(&mutex);
 
 	return 0;
@@ -257,8 +265,10 @@ void page_sim_end()
 
 int page_sim_get(unsigned a, uint8_t *v)
 {
+	if(debug)
+		printf("page_sim_get(%u, %u) called pthread_self()=%d\n", a, *v, pthread_self());
 	pthread_mutex_lock(&mutex);
-	if(end)
+	if(first_time_init || end)
 	{
 		pthread_mutex_unlock(&mutex);
 		return -1;
@@ -270,8 +280,10 @@ int page_sim_get(unsigned a, uint8_t *v)
 
 int page_sim_set(unsigned a, uint8_t v)
 {
+	if(debug)
+		printf("page_sim_get(%u, %u) called\n", a, v);
 	pthread_mutex_lock(&mutex);
-	if(end)
+	if(first_time_init || end)
 	{
 		pthread_mutex_unlock(&mutex);
 		return -1;
