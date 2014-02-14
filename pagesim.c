@@ -2,8 +2,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <unistd.h>
+#include <string.h>
 
+// Mutex protecting variables
 pthread_mutex_t mutex;
+// Mutex responsible for simulated memory access
+pthread_mutex_t memory;
 
 // TODO do we need enum name?
 enum {
@@ -46,7 +51,7 @@ unsigned mem_size;
 unsigned addr_space_size;
 unsigned strategy;
 unsigned max_concurrent_operations;
-/* pagesim_callback *callback; */
+pagesim_callback callback;
 
 int strzalka;
 int wolna;
@@ -218,12 +223,18 @@ int page_sim_init(unsigned _page_size, unsigned _mem_size,
 	addr_space_size = _addr_space_size;
 	strategy = _strategy;
 	max_concurrent_operations = _max_concurrent_operations;
-	/* callback = &_callback; */
+	/* callback = _callback; */
 
-	// TODO errors?
-	frames = (int *) malloc(2 * mem_size);
 	PaO = (frame*) malloc(mem_size);
 	virtual_memory = (int*) malloc(page_size * mem_size);
+	frames = (int *) malloc(2 * mem_size);
+	memset(frames, -1, 2 * mem_size);
+	if (PaO == NULL || virtual_memory == NULL || frames == NULL)
+	{
+		fprintf(stderr, "malloc failed\n");
+		exit(1);
+	}
+
 	size_t i;
 	pthread_mutex_unlock(&mutex);
 
@@ -275,6 +286,10 @@ int page_sim_get(unsigned a, uint8_t *v)
 	}
 	number_of_pagesim_call++;
 	pthread_mutex_unlock(&mutex);
+	/* pthread_mutex_lock(&memory); */
+	/* printf("page_sim_get sleep()\n"); */
+	/* sleep(1); */
+	/* pthread_mutex_unlock(&memory); */
 	return 0;
 }
 
