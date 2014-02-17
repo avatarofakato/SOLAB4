@@ -171,6 +171,7 @@ void WSClock(int *nrramki)
 }
 
 // Simulates 2D arrays TODO is mutex needed?
+// TODO get rid of this shit
 int get_frame(int index, position pos)
 {
 	pthread_mutex_lock(&mutex);
